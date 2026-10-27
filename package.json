@@ -9,10 +9,7 @@
   "author": "Me",
   "type": "module",
   "dependencies": {
-    "cookie-parser": "^1.4.6",
     "cors": "^2.8.6",
-    "cryptr": "^6.2.0",
-    "express": "^4.18.2",
-    "follow-redirects": "^1.15.3"
+    "express": "^4.18.2"
   }
 }

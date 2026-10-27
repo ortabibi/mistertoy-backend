@@ -1,10 +1,8 @@
 import path from 'path'
 import express from 'express'
 import cors from 'cors'
-import cookieParser from 'cookie-parser'
 
 import { toyService } from './services/toy.service.js'
-// import { userService } from './services/user.service.js'
 import { loggerService } from './services/logger.service.js'
 
 const app = express()
@@ -22,13 +20,12 @@ const corsOptions = {
 // Express Config:
 app.use(cors(corsOptions))
 app.use(express.static('public'))
-app.use(cookieParser())
 app.use(express.json())
 
 // Express Routing:
 
-// REST API for Cars
-app.get('/api/toy', (req, res) => {
+// REST API for Toys
+app.get('/api/toy', async (req, res) => {
     const labels = req.query.labels || req.query['labels[]'] || []
     const filterBy = {
         txt: req.query.txt || '',
@@ -38,25 +35,27 @@ app.get('/api/toy', (req, res) => {
         labels: Array.isArray(labels) ? labels : [labels],
         sortBy: req.query.sortBy || '',
     }
-    toyService.query(filterBy)
-        .then(toys => res.send(toys))
-        .catch(err => {
-            loggerService.error('Cannot get toys', err)
-            res.status(400).send('Cannot get toys')
-        })
+    try {
+        const toys = await toyService.query(filterBy)
+        res.send(toys)
+    } catch (err) {
+        loggerService.error('Cannot get toys', err)
+        res.status(400).send('Cannot get toys')
+    }
 })
 
-app.get('/api/toy/:toyId', (req, res) => {
+app.get('/api/toy/:toyId', async (req, res) => {
     const { toyId } = req.params
-    toyService.getById(toyId)
-        .then(toy => res.send(toy))
-        .catch(err => {
-            loggerService.error('Cannot get toy', err)
-            res.status(400).send('Cannot get toy')
-        })
+    try {
+        const toy = await toyService.getById(toyId)
+        res.send(toy)
+    } catch (err) {
+        loggerService.error('Cannot get toy', err)
+        res.status(400).send('Cannot get toy')
+    }
 })
 
-app.post('/api/toy', (req, res) => {
+app.post('/api/toy', async (req, res) => {
     const toy = {
         name: req.body.name,
         imgUrl: req.body.imgUrl,
@@ -64,15 +63,16 @@ app.post('/api/toy', (req, res) => {
         labels: req.body.labels || [],
         inStock: req.body.inStock,
     }
-    toyService.save(toy)
-        .then(savedToy => res.send(savedToy))
-        .catch(err => {
-            loggerService.error('Cannot save toy', err)
-            res.status(400).send('Cannot save toy')
-        })
+    try {
+        const savedToy = await toyService.save(toy)
+        res.send(savedToy)
+    } catch (err) {
+        loggerService.error('Cannot save toy', err)
+        res.status(400).send('Cannot save toy')
+    }
 })
 
-app.put('/api/toy/:id', (req, res) => {
+app.put('/api/toy/:id', async (req, res) => {
     const toy = {
         _id: req.params.id,
         name: req.body.name,
@@ -81,25 +81,27 @@ app.put('/api/toy/:id', (req, res) => {
         labels: req.body.labels || [],
         inStock: req.body.inStock,
     }
-    toyService.save(toy)
-        .then(savedToy => res.send(savedToy))
-        .catch(err => {
-            loggerService.error('Cannot save toy', err)
-            res.status(400).send('Cannot save toy')
-        })
+    try {
+        const savedToy = await toyService.save(toy)
+        res.send(savedToy)
+    } catch (err) {
+        loggerService.error('Cannot save toy', err)
+        res.status(400).send('Cannot save toy')
+    }
 })
 
-app.delete('/api/toy/:toyId', (req, res) => {
+app.delete('/api/toy/:toyId', async (req, res) => {
     const { toyId } = req.params
-    toyService.remove(toyId)
-        .then(() => res.send('Removed!'))
-        .catch(err => {
-            loggerService.error('Cannot remove toy', err)
-            res.status(400).send('Cannot remove toy')
-        })
+    try {
+        await toyService.remove(toyId)
+        res.send('Removed!')
+    } catch (err) {
+        loggerService.error('Cannot remove toy', err)
+        res.status(400).send('Cannot remove toy')
+    }
 })
 
-app.get('/*splat', (req, res) => {
+app.use((req, res) => {
     res.sendFile(path.resolve('public/index.html'))
 })
 

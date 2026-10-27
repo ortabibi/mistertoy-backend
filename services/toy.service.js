@@ -1,4 +1,5 @@
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 
 const TOYS_FILE = 'data/toy.json'
 const labels = ['On wheels', 'Box game', 'Art', 'Baby', 'Doll', 'Puzzle', 'Outdoor', 'Battery Powered']
@@ -13,7 +14,7 @@ export const toyService = {
     save,
 }
 
-function query(filterBy = {}) {
+async function query(filterBy = {}) {
     let filteredToys = [...toys]
 
     if (filterBy.txt) {
@@ -37,42 +38,48 @@ function query(filterBy = {}) {
         filteredToys.sort((toy1, toy2) => toy2.createdAt - toy1.createdAt)
     }
 
-    return Promise.resolve(filteredToys)
+    return filteredToys
 }
 
-function getById(toyId) {
+async function getById(toyId) {
     const toy = toys.find(toy => toy._id === toyId)
-    if (!toy) return Promise.reject('Toy not found')
-    return Promise.resolve(toy)
+    if (!toy) throw new Error('Toy not found')
+    return toy
 }
 
-function remove(toyId) {
+async function remove(toyId) {
     const idx = toys.findIndex(toy => toy._id === toyId)
-    if (idx === -1) return Promise.reject('Toy not found')
+    if (idx === -1) throw new Error('Toy not found')
     toys.splice(idx, 1)
-    return _saveToysToFile()
+    await _saveToysToFile()
 }
 
-function save(toy) {
+async function save(toy) {
     if (toy._id) {
         const idx = toys.findIndex(currToy => currToy._id === toy._id)
-        if (idx === -1) return Promise.reject('Toy not found')
+        if (idx === -1) throw new Error('Toy not found')
         toys[idx] = { ...toys[idx], ...toy }
-        return _saveToysToFile().then(() => toys[idx])
+        await _saveToysToFile()
+        return toys[idx]
     } else {
         toy._id = _makeId()
         toy.createdAt = Date.now()
         toys.push(toy)
-        return _saveToysToFile().then(() => toy)
+        await _saveToysToFile()
+        return toy
     }
 }
 
-function _createToys() {
+async function _createToys() {
     if (toys.length) return
     for (let i = 0; i < 12; i++) {
         toys.push(_getRandomToy())
     }
-    _saveToysToFile()
+    try {
+        await _saveToysToFile()
+    } catch (err) {
+        console.log('Cannot save initial toys', err)
+    }
 }
 
 function _getRandomToy() {
@@ -88,13 +95,8 @@ function _getRandomToy() {
     }
 }
 
-function _saveToysToFile() {
-    return new Promise((resolve, reject) => {
-        fs.writeFile(TOYS_FILE, JSON.stringify(toys, null, 4), err => {
-            if (err) return reject(err)
-            resolve()
-        })
-    })
+async function _saveToysToFile() {
+    await fsPromises.writeFile(TOYS_FILE, JSON.stringify(toys, null, 4))
 }
 
 function _makeId(length = 5) {
